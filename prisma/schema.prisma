@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Client {
+  id          String       @id @default(cuid())
+  name        String
+  industry    String?
+  employeeSize String?
+  country     String?      @default("Chile")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  assessments Assessment[]
+}
+
+model Assessment {
+  id              String      @id @default(cuid())
+  clientId        String
+  status          String      @default("COMPLETED")
+  automationScore Int
+  level           String
+  answers         Json
+  dimensions      Json
+  insights        Json
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  client          Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  blueprint       Blueprint?
+}
+
+model Blueprint {
+  id           String      @id @default(cuid())
+  assessmentId String      @unique
+  content      Json
+  version      Int         @default(1)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  assessment   Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}

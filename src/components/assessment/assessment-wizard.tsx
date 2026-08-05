@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { generateAssessmentInsights } from "@/lib/assessment/recommendations";
+import { useRouter } from "next/navigation";
 
 type Option = {
   label: string;
@@ -92,7 +94,11 @@ const questions: Question[] = [
       "Piense en ERP, CRM, correo, Excel, SharePoint, bases de datos y aplicaciones internas.",
     type: "options",
     options: [
-      { label: "Totalmente desconectados", value: "disconnected", score: 10 },
+      {
+        label: "Totalmente desconectados",
+        value: "disconnected",
+        score: 10,
+      },
       { label: "Pocas integraciones", value: "few", score: 8 },
       { label: "Parcialmente integrados", value: "partial", score: 6 },
       { label: "Mayormente integrados", value: "mostly", score: 4 },
@@ -121,7 +127,11 @@ const questions: Question[] = [
     type: "options",
     options: [
       { label: "No existen reglas claras", value: "none", score: 2 },
-      { label: "Algunas decisiones tienen reglas", value: "some", score: 5 },
+      {
+        label: "Algunas decisiones tienen reglas",
+        value: "some",
+        score: 5,
+      },
       { label: "La mayoría sigue reglas", value: "most", score: 8 },
       { label: "Prácticamente todas", value: "all", score: 10 },
     ],
@@ -142,7 +152,9 @@ const questions: Question[] = [
 ];
 
 function getSelectedScore(question: Question, answer?: string): number {
-  if (question.type === "text" || !answer) return 0;
+  if (question.type === "text" || !answer) {
+    return 0;
+  }
 
   return (
     question.options?.find((option) => option.value === answer)?.score ?? 0
@@ -150,28 +162,61 @@ function getSelectedScore(question: Question, answer?: string): number {
 }
 
 export function AssessmentWizard() {
+
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [completed, setCompleted] = useState(false);
+
+  const router = useRouter();
+  const [isSaving, startSaving] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const question = questions[currentStep];
   const answer = answers[question.id] ?? "";
   const progress = ((currentStep + 1) / questions.length) * 100;
 
-  const automationScore = useMemo(() => {
-    const scoredQuestions = questions.filter(
-      (item) => item.type === "options",
-    );
+  const dimensionScores = useMemo(() => {
+    const getScore = (id: string): number => {
+      const selectedQuestion = questions.find((item) => item.id === id);
 
-    const total = scoredQuestions.reduce(
-      (sum, item) => sum + getSelectedScore(item, answers[item.id]),
-      0,
-    );
+      if (!selectedQuestion) {
+        return 0;
+      }
 
-    const maximum = scoredQuestions.length * 10;
+      return getSelectedScore(selectedQuestion, answers[id]);
+    };
 
-    return maximum === 0 ? 0 : Math.round((total / maximum) * 100);
+    return {
+      procesos: Math.round(
+        ((getScore("manualWork") +
+          getScore("rules") +
+          getScore("errors")) /
+          30) *
+          100,
+      ),
+      informacion: Math.round((getScore("documents") / 10) * 100),
+      integracion: Math.round((getScore("systems") / 10) * 100),
+      automatizacion: Math.round(
+        ((getScore("manualWork") + getScore("systems")) / 20) * 100,
+      ),
+      ia: Math.round(
+        ((getScore("documents") + getScore("rules")) / 20) * 100,
+      ),
+    };
   }, [answers]);
+
+  const automationScore = useMemo(() => {
+    const values = Object.values(dimensionScores);
+
+    return Math.round(
+      values.reduce((total, value) => total + value, 0) / values.length,
+    );
+  }, [dimensionScores]);
+
+  const insights = useMemo(
+    () => generateAssessmentInsights(dimensionScores),
+    [dimensionScores],
+  );
 
   const result = useMemo(() => {
     if (automationScore >= 80) {
@@ -205,17 +250,42 @@ export function AssessmentWizard() {
     };
   }, [automationScore]);
 
+  const dimensionResults = [
+    {
+      label: "Procesos",
+      value: dimensionScores.procesos,
+    },
+    {
+      label: "Información",
+      value: dimensionScores.informacion,
+    },
+    {
+      label: "Integración",
+      value: dimensionScores.integracion,
+    },
+    {
+      label: "Automatización",
+      value: dimensionScores.automatizacion,
+    },
+    {
+      label: "Preparación para IA",
+      value: dimensionScores.ia,
+    },
+  ];
+
   const canContinue = answer.trim().length > 0;
 
   function updateAnswer(value: string) {
-    setAnswers((current) => ({
-      ...current,
+    setAnswers((currentAnswers) => ({
+      ...currentAnswers,
       [question.id]: value,
     }));
   }
 
   function goNext() {
-    if (!canContinue) return;
+    if (!canContinue) {
+      return;
+    }
 
     if (currentStep === questions.length - 1) {
       setCompleted(true);
@@ -235,6 +305,85 @@ export function AssessmentWizard() {
     setAnswers({});
     setCurrentStep(0);
     setCompleted(false);
+  }
+
+function generateBlueprint() {
+    setSaveError(null);
+
+    const blueprintData = {
+      company: answers.company || "Organización evaluada",
+      generatedAt: new Date().toISOString(),
+      automationScore,
+      level: result.level,
+      diagnosis: result.description,
+      dimensions: dimensionScores,
+      insights,
+    };
+
+    startSaving(async () => {
+      try {
+        const request = await fetch("/api/assessments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client: {
+              name: answers.company || "Organización evaluada",
+              industry: answers.industry,
+              employeeSize: answers.employees,
+              country: "Chile",
+            },
+            assessment: {
+              automationScore,
+              level: result.level,
+              answers,
+              dimensions: dimensionScores,
+              insights,
+            },
+            blueprint: {
+              content: blueprintData,
+            },
+          }),
+        });
+
+        const response = (await request.json()) as
+          | {
+              success: true;
+              clientId: string;
+              assessmentId: string;
+              blueprintId: string;
+            }
+          | {
+              success: false;
+              error: string;
+            };
+
+        if (!request.ok || !response.success) {
+          setSaveError(
+            response.success
+              ? "No fue posible guardar el Assessment."
+              : response.error,
+          );
+          return;
+        }
+
+        sessionStorage.setItem(
+          "xonplace-assessment-blueprint",
+          JSON.stringify(blueprintData),
+        );
+
+        router.push(`/portal/assessment/blueprint/${response.blueprintId}`);
+      } catch (error) {
+        console.error("Error guardando Assessment:", error);
+
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : "No fue posible guardar el Assessment.",
+        );
+      }
+    });
   }
 
   if (completed) {
@@ -281,14 +430,170 @@ export function AssessmentWizard() {
 
                 <div>
                   <h2 className="text-xl font-bold">Diagnóstico inicial</h2>
+
                   <p className="mt-2 leading-7 text-muted-foreground">
                     {result.description}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl border p-4">
+              <div className="mt-8">
+                <h3 className="text-lg font-bold">
+                  Resultado por dimensiones
+                </h3>
+
+                <div className="mt-4 space-y-4">
+                  {dimensionResults.map((dimension) => (
+                    <div key={dimension.label}>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium">{dimension.label}</span>
+
+                        <span className="font-semibold">
+                          {dimension.value}/100
+                        </span>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                          style={{ width: `${dimension.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+    <h3 className="font-bold text-emerald-950">Fortalezas detectadas</h3>
+
+    <div className="mt-4 space-y-3">
+      {insights.strengths.length > 0 ? (
+        insights.strengths.map((strength) => (
+          <div key={strength} className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+
+            <p className="text-sm leading-6 text-emerald-900">
+              {strength}
+            </p>
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-emerald-900">
+          El Assessment necesita mayor información para identificar fortalezas.
+        </p>
+      )}
+    </div>
+  </div>
+
+  <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+    <h3 className="font-bold text-amber-950">Riesgos y brechas</h3>
+
+    <div className="mt-4 space-y-3">
+      {insights.risks.length > 0 ? (
+        insights.risks.map((risk) => (
+          <div key={risk} className="flex items-start gap-3">
+            <span className="mt-1 size-2 shrink-0 rounded-full bg-amber-500" />
+
+            <p className="text-sm leading-6 text-amber-900">{risk}</p>
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-amber-900">
+          No se detectaron brechas críticas en esta evaluación preliminar.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+
+<div className="mt-8">
+  <div className="flex items-end justify-between gap-4">
+    <div>
+      <h3 className="text-lg font-bold">Recomendaciones prioritarias</h3>
+
+      <p className="mt-1 text-sm text-muted-foreground">
+        Acciones sugeridas según las respuestas del Assessment.
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-blue-50 px-4 py-3 text-right">
+      <p className="text-xs font-semibold text-blue-700">
+        Ahorro potencial inicial
+      </p>
+
+      <p className="mt-1 text-xl font-bold text-blue-800">
+        {insights.estimatedHoursPerMonth} h/mes
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-5 space-y-4">
+    {insights.recommendations.map((recommendation, index) => (
+      <div
+        key={`${recommendation.title}-${index}`}
+        className="rounded-xl border p-5"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">
+                {index + 1}
+              </span>
+
+              <h4 className="font-bold">{recommendation.title}</h4>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {recommendation.description}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              {recommendation.category}
+            </span>
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                recommendation.priority === "Alta"
+                  ? "bg-red-50 text-red-700"
+                  : recommendation.priority === "Media"
+                    ? "bg-amber-50 text-amber-700"
+                    : "bg-slate-100 text-slate-700"
+              }`}
+            >
+              Prioridad {recommendation.priority}
+            </span>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<div className="mt-8">
+  <h3 className="text-lg font-bold">Roadmap inicial</h3>
+
+  <div className="mt-5 grid gap-4 lg:grid-cols-3">
+    {insights.roadmap.map((item) => (
+      <div key={item.phase} className="rounded-xl border p-5">
+        <p className="text-sm font-bold text-blue-600">{item.phase}</p>
+
+        <h4 className="mt-3 font-bold">{item.title}</h4>
+
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          {item.description}
+        </p>
+      </div>
+    ))}
+  </div>
+</div>
+
+              <div className="mt-8 rounded-xl border p-4">
                 <p className="font-semibold">Siguiente etapa</p>
+
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   En la siguiente versión, XONPLACE transformará estas
                   respuestas en procesos prioritarios, agentes recomendados,
@@ -297,13 +602,23 @@ export function AssessmentWizard() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Generar Blueprint
-                </Button>
+                 <Button
+                  type="button"
+                  onClick={generateBlueprint}
+                  disabled={isSaving}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                    {isSaving ? "Guardando..." : "Generar Blueprint"}
+                  </Button>
 
                 <Button variant="outline" onClick={restart}>
                   Realizar nuevamente
                 </Button>
+                {saveError && (
+                  <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {saveError}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -319,6 +634,7 @@ export function AssessmentWizard() {
           <span className="font-semibold text-blue-600">
             XONPLACE Automation Assessment
           </span>
+
           <span className="text-muted-foreground">
             Pregunta {currentStep + 1} de {questions.length}
           </span>

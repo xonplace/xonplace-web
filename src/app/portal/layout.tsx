@@ -13,10 +13,12 @@ export default function PortalLayout({
 }) {
   return (
     <SidebarProvider>
+      <div className="print:hidden">
       <AppSidebar />
+      </div>
 
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-background px-4">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-background px-4 print:hidden">
           <SidebarTrigger className="-ml-1" />
 
           <Separator orientation="vertical" className="h-5" />
