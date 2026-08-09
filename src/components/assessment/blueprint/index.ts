@@ -21,3 +21,5 @@ export * from "./roadmap-section";
 export * from "./opportunity-matrix";
 
 export * from "./next-steps-section";
+
+export * from "./process-analysis-section";

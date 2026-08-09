@@ -12,6 +12,7 @@ import {
   FindingsSection,
   MaturityRadarSection,
   OpportunityMatrix,
+  ProcessAnalysisSection,
   RoadmapSection,
   NextStepsSection,
   type BlueprintReportData,
@@ -41,6 +42,8 @@ export function BlueprintReport({ data }: BlueprintReportProps) {
 
         <div className="space-y-14 p-8 sm:p-12">
           <ExecutiveDashboard data={data} />
+
+          <ProcessAnalysisSection data={data} />
 
           <ExecutiveSummary data={data} />
 
