@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
-import {
-  BlueprintReport,
-  type BlueprintReportData,
-} from "@/components/assessment/blueprint-report";
+import { BlueprintReport } from "@/components/assessment/blueprint-report";
+
+import type { BlueprintReportData } from "@/components/assessment/blueprint";
+
 import { getBlueprintById } from "@/services/assessment.service";
 
 type StoredBlueprintPageProps = {
