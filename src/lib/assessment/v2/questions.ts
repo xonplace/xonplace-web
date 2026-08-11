@@ -237,6 +237,44 @@ export const assessmentV2Questions: AssessmentV2Question[] = [
       { label: "No", value: "no" },
     ],
   },
+  
+  {
+  id: "systemsIntegrated",
+  section: "Sistemas",
+  title: "¿Los sistemas involucrados están integrados automáticamente entre sí?",
+  description:
+    "Considera integraciones mediante API, conectores, sincronización automática o intercambio de datos sin intervención manual.",
+  type: "single",
+  showWhen: {
+    questionId: "usesMultipleSystems",
+    values: ["yes"],
+  },
+  options: [
+    { label: "Sí, la mayoría", value: "most" },
+    { label: "Algunos", value: "some" },
+    { label: "No", value: "none" },
+    { label: "No lo sé", value: "unknown" },
+  ],
+},
+{
+  id: "apiAvailability",
+  section: "Sistemas",
+  title: "¿Los sistemas disponen de API o mecanismos de integración?",
+  description:
+    "Si no lo sabes, puedes indicarlo. Esta información ayuda a estimar la complejidad de implementación.",
+  type: "single",
+  showWhen: {
+    questionId: "usesMultipleSystems",
+    values: ["yes"],
+  },
+  options: [
+    { label: "Sí, la mayoría", value: "most" },
+    { label: "Algunos", value: "some" },
+    { label: "No", value: "none" },
+    { label: "No lo sé", value: "unknown" },
+  ],
+},
+
 
   {
     id: "rulesKnown",

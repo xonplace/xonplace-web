@@ -16,6 +16,10 @@ import type {
   AssessmentV2Answers,
 } from "./adapter";
 
+import {
+  calculateMaturityDimensions,
+} from "./maturity-engine";
+
 type BuildBlueprintV2Input = {
   id?: string;
   answers: AssessmentV2Answers;
@@ -60,6 +64,19 @@ function getEvidenceStrength(
   );
 }
 
+/*
+ * IMPORTANTE:
+ *
+ * Esta función corresponde al modelo anterior
+ * de dimensiones basado principalmente en
+ * evidencias del Intelligence Engine.
+ *
+ * Por ahora la conservamos para compatibilidad
+ * y comparación durante la transición al
+ * Maturity Engine V2.
+ *
+ * buildBlueprintV2() ya NO utiliza esta función.
+ */
 function calculateDimensions(
   intelligence: IntelligenceResult,
 ): DimensionScores {
@@ -107,12 +124,6 @@ function calculateDimensions(
       evidence,
       "approvals",
     );
-
-  /*
-   * En el Blueprint las dimensiones representan MADUREZ.
-   * Por eso algunas evidencias que representan brechas
-   * deben invertirse.
-   */
 
   const procesos = clamp(
     rules * 0.45 +
@@ -314,27 +325,40 @@ function getAgentPurpose(
     name ===
     "Document Intelligence Agent"
   ) {
-    return `Procesar documentos e información asociados al proceso "${opportunity.title}", extrayendo y validando datos antes de continuar el workflow.`;
+    return (
+      `Procesar documentos e información asociados al proceso ` +
+      `"${opportunity.title}", extrayendo y validando datos antes ` +
+      "de continuar el workflow."
+    );
   }
 
   if (
     name ===
     "Workflow Supervisor Agent"
   ) {
-    return "Supervisar la ejecución del workflow, detectar excepciones y escalar únicamente los casos que requieren intervención humana.";
+    return (
+      "Supervisar la ejecución del workflow, detectar excepciones " +
+      "y escalar únicamente los casos que requieren intervención humana."
+    );
   }
 
   if (
     name ===
     "Integration Orchestrator"
   ) {
-    return "Coordinar el intercambio de información entre los sistemas involucrados y reducir transferencias manuales o doble digitación.";
+    return (
+      "Coordinar el intercambio de información entre los sistemas " +
+      "involucrados y reducir transferencias manuales o doble digitación."
+    );
   }
 
   if (
     name === "Data Quality Agent"
   ) {
-    return "Validar consistencia, obligatoriedad y reglas de negocio para prevenir errores y reducir retrabajos.";
+    return (
+      "Validar consistencia, obligatoriedad y reglas de negocio " +
+      "para prevenir errores y reducir retrabajos."
+    );
   }
 
   return `Apoyar la automatización de ${opportunity.title}.`;
@@ -350,7 +374,10 @@ function mapAgents(
     >();
 
   for (const opportunity of opportunities) {
-    for (const agentName of opportunity.recommendedAgents) {
+    for (
+      const agentName of
+      opportunity.recommendedAgents
+    ) {
       const existing =
         agentMap.get(agentName);
 
@@ -546,7 +573,7 @@ function buildDiagnosis(
   if (opportunity >= 60) {
     return (
       `El proceso "${process.name}" presenta oportunidades concretas de automatización, ` +
-      `aunque se recomienda priorizar iniciativas selectivas y validar primero las variables operacionales críticas. ` +
+      "aunque se recomienda priorizar iniciativas selectivas y validar primero las variables operacionales críticas. " +
       `Opportunity Score: ${opportunity}/100. Confidence Score: ${confidence}/100.`
     );
   }
@@ -653,8 +680,21 @@ export function buildBlueprintV2({
     );
 
   const estimatedHoursPerMonth =
-    intelligence.economics
-      .recoverableHoursPerMonth ?? 0;
+  intelligence.economics
+    .recoverableHoursPerMonth;
+
+  /*
+   * NUEVO MOTOR DE MADUREZ V2
+   *
+   * A diferencia del modelo anterior,
+   * estas cinco dimensiones se calculan
+   * directamente desde las respuestas
+   * estructuradas del Assessment V2.
+   */
+  const maturity =
+    calculateMaturityDimensions(
+      answers,
+    );
 
   return {
     id,
@@ -665,10 +705,13 @@ export function buildBlueprintV2({
       new Date().toISOString(),
 
     /*
-     * Conservamos automationScore por compatibilidad
-     * visual con el Blueprint actual.
+     * Por compatibilidad con el Blueprint
+     * existente mantenemos automationScore.
      *
-     * En V2 representa Opportunity Score.
+     * Actualmente representa Opportunity Score.
+     *
+     * Más adelante podremos reemplazarlo por
+     * un XONPLACE Automation Index propio.
      */
     automationScore:
       intelligence.scores.opportunity,
@@ -682,63 +725,98 @@ export function buildBlueprintV2({
         intelligence,
       ),
 
-    dimensions:
-      calculateDimensions(
-        intelligence,
-      ),
+    /*
+     * Scores visibles en el radar.
+     *
+     * Desde ahora vienen del Maturity Engine V2.
+     */
+    dimensions: {
+      procesos:
+        maturity.procesos.score,
+
+      informacion:
+        maturity.informacion.score,
+
+      integracion:
+        maturity.integracion.score,
+
+      automatizacion:
+        maturity.automatizacion.score,
+
+      ia:
+        maturity.ia.score,
+    },
+
+    /*
+     * Análisis completo y trazable.
+     *
+     * Incluye:
+     * - score
+     * - nivel
+     * - rationale
+     * - factores
+     * - acciones recomendadas
+     */
+    maturityAnalysis:
+      maturity,
 
     processAnalysis: {
-  name: process.name,
+      name:
+        process.name,
 
-  description:
-    process.description,
+      description:
+        process.description,
 
-  executionsPerMonth:
-    process.executionsPerMonth,
+      executionsPerMonth:
+        process.executionsPerMonth,
 
-  peopleInvolved:
-    process.peopleInvolved,
+      peopleInvolved:
+        process.peopleInvolved,
 
-  minutesPerExecution:
-    process.minutesPerExecution,
+      minutesPerExecution:
+        process.minutesPerExecution,
 
-  manualPercentage:
-    process.manualPercentage,
+      manualPercentage:
+        process.manualPercentage,
 
-  systems:
-    process.systems,
+      systems:
+        process.systems,
 
-  inputs:
-    process.inputs,
+      inputs:
+        process.inputs,
 
-  requiresApproval:
-    process.requiresApproval,
+      requiresApproval:
+        process.requiresApproval,
 
-  hasExceptions:
-    process.hasExceptions,
+      hasExceptions:
+        process.hasExceptions,
 
-  scores: {
-    readiness:
-      intelligence.scores.readiness,
+      scores: {
+        readiness:
+          intelligence.scores
+            .readiness,
 
-    opportunity:
-      intelligence.scores.opportunity,
+        opportunity:
+          intelligence.scores
+            .opportunity,
 
-    businessImpact:
-      intelligence.scores.businessImpact,
+        businessImpact:
+          intelligence.scores
+            .businessImpact,
 
-    confidence:
-      intelligence.scores.confidence,
-  },
+        confidence:
+          intelligence.scores
+            .confidence,
+      },
 
-  currentHoursPerMonth:
-    intelligence.economics
-      .currentHoursPerMonth,
+      currentHoursPerMonth:
+        intelligence.economics
+          .currentHoursPerMonth,
 
-  recoverableHoursPerMonth:
-    intelligence.economics
-      .recoverableHoursPerMonth,
-},  
+      recoverableHoursPerMonth:
+        intelligence.economics
+          .recoverableHoursPerMonth,
+    },
 
     insights: {
       strengths:
@@ -799,3 +877,15 @@ export function buildBlueprintV2({
     },
   };
 }
+
+/*
+ * Se mantiene exportable únicamente si
+ * necesitamos comparar temporalmente el
+ * cálculo antiguo con el nuevo.
+ *
+ * Puede eliminarse cuando terminemos la
+ * validación del Maturity Engine V2.
+ */
+export {
+  calculateDimensions,
+};

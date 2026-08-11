@@ -74,6 +74,34 @@ export type ProcessAnalysis = {
   recoverableHoursPerMonth?: number;
 };
 
+export type MaturityFactorStatus =
+  | "fortaleza"
+  | "parcial"
+  | "brecha"
+  | "desconocido";
+
+export type MaturityFactor = {
+  label: string;
+  status: MaturityFactorStatus;
+  detail: string;
+};
+
+export type MaturityDimensionDetail = {
+  score: number;
+  level: string;
+  rationale: string;
+  factors: MaturityFactor[];
+  actions: string[];
+};
+
+export type MaturityAnalysis = {
+  procesos: MaturityDimensionDetail;
+  informacion: MaturityDimensionDetail;
+  integracion: MaturityDimensionDetail;
+  automatizacion: MaturityDimensionDetail;
+  ia: MaturityDimensionDetail;
+};
+
 export type BlueprintInsights = {
   strengths: string[];
   risks: string[];
@@ -81,7 +109,7 @@ export type BlueprintInsights = {
   recommendations: Recommendation[];
   agents: AgentRecommendation[];
 
-  estimatedHoursPerMonth: number;
+  estimatedHoursPerMonth?: number;
 
   economicEstimate: EconomicEstimate;
 
@@ -103,6 +131,7 @@ export type BlueprintReportData = {
   diagnosis: string;
 
   dimensions: DimensionScores;
+  maturityAnalysis?: MaturityAnalysis;
 
   /*
    * Solo está presente en Blueprints V2.

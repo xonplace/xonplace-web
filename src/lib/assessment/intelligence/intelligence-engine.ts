@@ -22,6 +22,7 @@ import {
 import type {
   AssessmentEvidence,
   IntelligenceResult,
+  IntelligenceScores,
   ProcessProfile,
 } from "./types";
 
@@ -35,22 +36,38 @@ export type IntelligenceEngineInput = {
   hourlyCostCLP?: number;
 
   estimatedImplementationCLP?: number;
+
+  /*
+   * Permite que Assessment V2 utilice
+   * un modelo de scoring propio sin
+   * romper el motor legacy.
+   */
+  scoresOverride?: IntelligenceScores;
 };
 
 function mergeEvidence(
   baseEvidence: AssessmentEvidence[],
   additionalEvidence: AssessmentEvidence[],
 ): AssessmentEvidence[] {
-  const evidenceMap = new Map<string, AssessmentEvidence>();
+  const evidenceMap =
+    new Map<
+      string,
+      AssessmentEvidence
+    >();
 
   for (const evidence of [
     ...baseEvidence,
     ...additionalEvidence,
   ]) {
-    evidenceMap.set(evidence.id, evidence);
+    evidenceMap.set(
+      evidence.id,
+      evidence,
+    );
   }
 
-  return Array.from(evidenceMap.values());
+  return Array.from(
+    evidenceMap.values(),
+  );
 }
 
 export function generateIntelligenceResult({
@@ -59,24 +76,44 @@ export function generateIntelligenceResult({
   additionalEvidence = [],
   hourlyCostCLP,
   estimatedImplementationCLP,
+  scoresOverride,
 }: IntelligenceEngineInput): IntelligenceResult {
   const legacyEvidence =
-    generateEvidence(answers);
+    generateEvidence(
+      answers,
+    );
 
-  const evidence = mergeEvidence(
-    legacyEvidence,
-    additionalEvidence,
-  );
+  const evidence =
+    mergeEvidence(
+      legacyEvidence,
+      additionalEvidence,
+    );
 
+  const calculatedScores =
+    calculateIntelligenceScores(
+      evidence,
+    );
+
+  /*
+   * V1 seguirá usando calculatedScores.
+   *
+   * V2 podrá entregar sus propios scores,
+   * calculados directamente desde las
+   * respuestas estructuradas.
+   */
   const scores =
-    calculateIntelligenceScores(evidence);
+    scoresOverride ??
+    calculatedScores;
 
   const genericOpportunities =
-    generateOpportunities(evidence);
+    generateOpportunities(
+      evidence,
+    );
 
   const opportunities =
     contextualizeOpportunities({
-      opportunities: genericOpportunities,
+      opportunities:
+        genericOpportunities,
       processes,
     });
 
@@ -102,14 +139,17 @@ export function generateIntelligenceResult({
     );
   }
 
-  if (opportunities.length === 0) {
+  if (
+    opportunities.length === 0
+  ) {
     warnings.push(
       "No existen suficientes señales para generar oportunidades de automatización con confianza.",
     );
   }
 
   if (
-    economics.recoverableHoursPerMonth ===
+    economics
+      .recoverableHoursPerMonth ===
     undefined
   ) {
     warnings.push(
@@ -118,7 +158,8 @@ export function generateIntelligenceResult({
   }
 
   if (
-    economics.monthlySavingsCLP === undefined
+    economics.monthlySavingsCLP ===
+    undefined
   ) {
     warnings.push(
       "El ahorro económico permanecerá pendiente hasta contar con un costo hora validado.",
@@ -126,7 +167,8 @@ export function generateIntelligenceResult({
   }
 
   if (
-    economics.roiPercentage === undefined
+    economics.roiPercentage ===
+    undefined
   ) {
     warnings.push(
       "El ROI no se calcula hasta contar con una estimación de inversión y ahorro económico validado.",

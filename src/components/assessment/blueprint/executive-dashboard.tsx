@@ -27,11 +27,25 @@ function formatCurrency(
   }).format(value);
 }
 
+function formatRecoverableHours(
+  value?: number,
+): string | number {
+  if (value === undefined) {
+    return "Pendiente";
+  }
+
+  return value;
+}
+
 export function ExecutiveDashboard({
   data,
 }: Props) {
   const economic =
     data.insights.economicEstimate;
+
+  const recoverableHours =
+    data.insights
+      .estimatedHoursPerMonth;
 
   return (
     <section className="space-y-6">
@@ -47,22 +61,33 @@ export function ExecutiveDashboard({
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          title="Automation Score"
+          title="Opportunity Score"
           value={data.automationScore}
           suffix="/100"
           icon={Activity}
           tone="blue"
+          description="Potencial detectado de automatización del proceso."
         />
 
         <MetricCard
           title="Horas recuperables"
-          value={
-            data.insights
-              .estimatedHoursPerMonth
+          value={formatRecoverableHours(
+            recoverableHours,
+          )}
+          suffix={
+            recoverableHours !==
+            undefined
+              ? "/mes"
+              : undefined
           }
-          suffix="/mes"
           icon={Clock3}
           tone="purple"
+          description={
+            recoverableHours ===
+            undefined
+              ? "Pendiente de validación operacional."
+              : undefined
+          }
         />
 
         <MetricCard

@@ -59,6 +59,10 @@ export function BusinessImpactSection({
   const economic =
     data.insights.economicEstimate;
 
+  const recoverableHours =
+    data.insights
+      .estimatedHoursPerMonth;
+
   const roi = calculateROI(
     economic.annualSavingsCLP,
     economic.estimatedImplementationCLP,
@@ -97,6 +101,12 @@ export function BusinessImpactSection({
           )}
           icon={PiggyBank}
           tone="green"
+          description={
+            economic.monthlySavingsCLP ===
+            undefined
+              ? "Pendiente de validación económica."
+              : undefined
+          }
         />
 
         <MetricCard
@@ -106,6 +116,12 @@ export function BusinessImpactSection({
           )}
           icon={TrendingUp}
           tone="green"
+          description={
+            economic.annualSavingsCLP ===
+            undefined
+              ? "Pendiente de validación económica."
+              : undefined
+          }
         />
 
         <MetricCard
@@ -115,6 +131,12 @@ export function BusinessImpactSection({
           )}
           icon={Banknote}
           tone="blue"
+          description={
+            economic.estimatedImplementationCLP ===
+            undefined
+              ? "Pendiente de definición del alcance técnico."
+              : undefined
+          }
         />
 
         <MetricCard
@@ -128,6 +150,12 @@ export function BusinessImpactSection({
           }
           icon={CalendarClock}
           tone="purple"
+          description={
+            economic.paybackMonths ===
+            undefined
+              ? "Pendiente hasta contar con ahorro e inversión validados."
+              : undefined
+          }
         />
       </div>
 
@@ -169,22 +197,26 @@ export function BusinessImpactSection({
               Potencial de recuperación
             </h3>
 
-            {data.insights
-              .estimatedHoursPerMonth >
-            0 ? (
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                La evaluación identifica
-                aproximadamente{" "}
-                <strong className="text-white">
-                  {
-                    data.insights
-                      .estimatedHoursPerMonth
-                  }{" "}
-                  horas mensuales
-                </strong>{" "}
-                con potencial de recuperación
-                mediante automatización.
-              </p>
+            {recoverableHours !== undefined ? (
+              recoverableHours > 0 ? (
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  La evaluación identifica
+                  aproximadamente{" "}
+                  <strong className="text-white">
+                    {recoverableHours} horas
+                    mensuales
+                  </strong>{" "}
+                  con potencial de recuperación
+                  mediante automatización.
+                </p>
+              ) : (
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  Con la información disponible,
+                  el cálculo actual no identifica
+                  horas recuperables para este
+                  proceso.
+                </p>
+              )
             ) : (
               <p className="mt-3 text-sm leading-7 text-slate-300">
                 Las horas recuperables

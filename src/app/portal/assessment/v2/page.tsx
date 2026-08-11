@@ -12,9 +12,11 @@ import { generateIntelligenceResult } from "@/lib/assessment/intelligence";
 import {
   adaptAssessmentV2,
   buildBlueprintV2,
+  calculateV2IntelligenceScores,
   generateV2Evidence,
   type AssessmentV2Answers,
 } from "@/lib/assessment/v2";
+
 
 export default function AssessmentV2Page() {
   const [result, setResult] =
@@ -37,6 +39,11 @@ export default function AssessmentV2Page() {
     const v2Evidence =
       generateV2Evidence(completedAnswers);
 
+    const v2Scores =
+    calculateV2IntelligenceScores(
+      completedAnswers,
+    );  
+
     const intelligence =
       generateIntelligenceResult({
         answers:
@@ -50,6 +57,9 @@ export default function AssessmentV2Page() {
 
         hourlyCostCLP:
           adapted.hourlyCostCLP,
+
+        scoresOverride:
+        v2Scores,            
       });
 
     setAnswers(completedAnswers);
