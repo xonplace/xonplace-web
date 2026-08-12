@@ -1,6 +1,9 @@
 "use server";
 
-import type { Prisma } from "@/generated/prisma/client";
+import type {
+  Prisma,
+} from "@/generated/prisma/client";
+
 import {
   saveAssessment,
   type SaveAssessmentInput,
@@ -13,15 +16,39 @@ export type SaveAssessmentActionInput = {
     employeeSize?: string;
     country?: string;
   };
+
   assessment: {
     automationScore: number;
     level: string;
-    answers: Prisma.InputJsonValue;
-    dimensions: Prisma.InputJsonValue;
-    insights: Prisma.InputJsonValue;
+
+    assessmentVersion?: string;
+    scoringVersion?: string;
+
+    readinessScore?: number;
+    opportunityScore?: number;
+    businessImpactScore?: number;
+    confidenceScore?: number;
+
+    answers:
+      Prisma.InputJsonValue;
+
+    dimensions:
+      Prisma.InputJsonValue;
+
+    insights:
+      Prisma.InputJsonValue;
+
+    intelligence?:
+      Prisma.InputJsonValue;
   };
+
   blueprint: {
-    content: Prisma.InputJsonValue;
+    content:
+      Prisma.InputJsonValue;
+
+    version?: number;
+
+    scoringVersion?: string;
   };
 };
 
@@ -41,25 +68,44 @@ export async function saveAssessmentAction(
   input: SaveAssessmentActionInput,
 ): Promise<SaveAssessmentActionResult> {
   try {
-    const serviceInput: SaveAssessmentInput = {
-      client: input.client,
-      assessment: input.assessment,
-      blueprint: input.blueprint,
-    };
+    const serviceInput:
+      SaveAssessmentInput = {
+        client:
+          input.client,
 
-    const result = await saveAssessment(serviceInput);
+        assessment:
+          input.assessment,
+
+        blueprint:
+          input.blueprint,
+      };
+
+    const result =
+      await saveAssessment(
+        serviceInput,
+      );
 
     return {
       success: true,
-      clientId: result.clientId,
-      assessmentId: result.assessmentId,
-      blueprintId: result.blueprintId,
+
+      clientId:
+        result.clientId,
+
+      assessmentId:
+        result.assessmentId,
+
+      blueprintId:
+        result.blueprintId,
     };
   } catch (error) {
-    console.error("Error al guardar el Assessment:", error);
+    console.error(
+      "Error al guardar el Assessment:",
+      error,
+    );
 
     return {
       success: false,
+
       error:
         error instanceof Error
           ? error.message

@@ -8,40 +8,82 @@ datasource db {
 }
 
 model Client {
-  id          String       @id @default(cuid())
-  name        String
-  industry    String?
+  id           String   @id @default(cuid())
+  name         String
+  industry     String?
   employeeSize String?
-  country     String?      @default("Chile")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  country      String?  @default("Chile")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   assessments Assessment[]
+
+  @@index([name])
+  @@index([industry])
 }
 
 model Assessment {
-  id              String      @id @default(cuid())
-  clientId        String
-  status          String      @default("COMPLETED")
+  id       String @id @default(cuid())
+  clientId String
+
+  status String @default("COMPLETED")
+
+  // Compatibilidad con Assessment V1.
   automationScore Int
   level           String
-  answers         Json
-  dimensions      Json
-  insights        Json
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
 
-  client          Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  blueprint       Blueprint?
+  // Versionado del diagnóstico.
+  assessmentVersion String @default("1.0")
+  scoringVersion    String @default("1.0")
+
+  // Scores consultables directamente.
+  readinessScore      Int?
+  opportunityScore    Int?
+  businessImpactScore Int?
+  confidenceScore     Int?
+
+  // Snapshots originales.
+  answers    Json
+  dimensions Json
+  insights   Json
+
+  // Resultado completo del Intelligence Engine V2.
+  intelligence Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  blueprint Blueprint?
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([scoringVersion])
+  @@index([readinessScore])
+  @@index([opportunityScore])
+  @@index([businessImpactScore])
+  @@index([confidenceScore])
 }
 
 model Blueprint {
-  id           String      @id @default(cuid())
-  assessmentId String      @unique
-  content      Json
-  version      Int         @default(1)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id           String @id @default(cuid())
+  assessmentId String @unique
 
-  assessment   Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  // Snapshot inmutable del reporte generado.
+  content Json
+
+  // Versión estructural del Blueprint.
+  version Int @default(1)
+
+  // Motor que originó el diagnóstico.
+  scoringVersion String @default("1.0")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([scoringVersion])
+  @@index([createdAt])
 }
