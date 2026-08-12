@@ -19,6 +19,10 @@ import {
   contextualizeOpportunities,
 } from "./context-engine";
 
+import {
+  explainIntelligenceScores,
+} from "./explainability-engine";
+
 import type {
   AssessmentEvidence,
   IntelligenceResult,
@@ -26,28 +30,42 @@ import type {
   ProcessProfile,
 } from "./types";
 
+const SCORING_VERSION =
+  "2.1";
+
 export type IntelligenceEngineInput = {
-  answers: AssessmentAnswers;
+  answers:
+    AssessmentAnswers;
 
-  processes?: ProcessProfile[];
+  processes?:
+    ProcessProfile[];
 
-  additionalEvidence?: AssessmentEvidence[];
+  additionalEvidence?:
+    AssessmentEvidence[];
 
-  hourlyCostCLP?: number;
+  hourlyCostCLP?:
+    number;
 
-  estimatedImplementationCLP?: number;
+  estimatedImplementationCLP?:
+    number;
 
   /*
-   * Permite que Assessment V2 utilice
-   * un modelo de scoring propio sin
-   * romper el motor legacy.
+   * Assessment V2 puede entregar sus
+   * propios scores calculados directamente
+   * desde las respuestas estructuradas.
+   *
+   * V1 continúa usando el Score Engine
+   * original.
    */
-  scoresOverride?: IntelligenceScores;
+  scoresOverride?:
+    IntelligenceScores;
 };
 
 function mergeEvidence(
-  baseEvidence: AssessmentEvidence[],
-  additionalEvidence: AssessmentEvidence[],
+  baseEvidence:
+    AssessmentEvidence[],
+  additionalEvidence:
+    AssessmentEvidence[],
 ): AssessmentEvidence[] {
   const evidenceMap =
     new Map<
@@ -78,45 +96,90 @@ export function generateIntelligenceResult({
   estimatedImplementationCLP,
   scoresOverride,
 }: IntelligenceEngineInput): IntelligenceResult {
+  /*
+   * Evidencia legacy.
+   *
+   * Se mantiene para compatibilidad con
+   * Assessment V1 y para complementar el
+   * diagnóstico V2.
+   */
   const legacyEvidence =
     generateEvidence(
       answers,
     );
 
+  /*
+   * Fusionamos evidencia sin duplicar IDs.
+   */
   const evidence =
     mergeEvidence(
       legacyEvidence,
       additionalEvidence,
     );
 
+  /*
+   * Scoring original.
+   */
   const calculatedScores =
     calculateIntelligenceScores(
       evidence,
     );
 
   /*
-   * V1 seguirá usando calculatedScores.
+   * V1:
+   * calculatedScores
    *
-   * V2 podrá entregar sus propios scores,
-   * calculados directamente desde las
-   * respuestas estructuradas.
+   * V2:
+   * scoresOverride calculados mediante
+   * calculateV2IntelligenceScores().
    */
   const scores =
     scoresOverride ??
     calculatedScores;
 
+  /*
+   * NUEVO:
+   *
+   * Construimos una explicación determinística
+   * utilizando exactamente los mismos scores
+   * y evidencia del diagnóstico.
+   *
+   * No utilizamos LLM.
+   * No inventamos factores.
+   */
+  const explanations =
+    explainIntelligenceScores(
+      scores,
+      evidence,
+    );
+
+  /*
+   * Detectamos oportunidades genéricas
+   * desde la evidencia.
+   */
   const genericOpportunities =
     generateOpportunities(
       evidence,
     );
 
+  /*
+   * Contextualizamos las oportunidades
+   * según los procesos evaluados.
+   */
   const opportunities =
     contextualizeOpportunities({
       opportunities:
         genericOpportunities,
+
       processes,
     });
 
+  /*
+   * Caso económico.
+   *
+   * Permanecerá parcial cuando falten
+   * datos operacionales o financieros.
+   */
   const economics =
     calculateEconomicProjection({
       processes,
@@ -125,28 +188,60 @@ export function generateIntelligenceResult({
       estimatedImplementationCLP,
     });
 
-  const warnings: string[] = [];
+  const warnings:
+    string[] = [];
 
-  if (evidence.length < 3) {
+  /*
+   * Evidencia insuficiente.
+   */
+  if (
+    evidence.length < 3
+  ) {
     warnings.push(
       "La evidencia disponible todavía es limitada. Se recomienda ampliar el Assessment antes de tomar decisiones de inversión.",
     );
   }
 
-  if (scores.confidence < 60) {
+  /*
+   * Confianza insuficiente.
+   */
+  if (
+    scores.confidence <
+    60
+  ) {
     warnings.push(
       "El nivel de confianza del diagnóstico es bajo o medio debido a información insuficiente.",
     );
   }
 
+  /*
+   * Cobertura insuficiente.
+   */
+ if (
+  explanations.confidence
+    .signalCoverage <
+  50
+) {
+  warnings.push(
+    "La cobertura de señales observadas es parcial. Se recomienda validar información adicional durante Discovery antes de tomar decisiones de inversión.",
+  );
+}
+
+  /*
+   * Ninguna oportunidad detectada.
+   */
   if (
-    opportunities.length === 0
+    opportunities.length ===
+    0
   ) {
     warnings.push(
       "No existen suficientes señales para generar oportunidades de automatización con confianza.",
     );
   }
 
+  /*
+   * Horas recuperables pendientes.
+   */
   if (
     economics
       .recoverableHoursPerMonth ===
@@ -157,8 +252,12 @@ export function generateIntelligenceResult({
     );
   }
 
+  /*
+   * Ahorro económico pendiente.
+   */
   if (
-    economics.monthlySavingsCLP ===
+    economics
+      .monthlySavingsCLP ===
     undefined
   ) {
     warnings.push(
@@ -166,8 +265,12 @@ export function generateIntelligenceResult({
     );
   }
 
+  /*
+   * ROI pendiente.
+   */
   if (
-    economics.roiPercentage ===
+    economics
+      .roiPercentage ===
     undefined
   ) {
     warnings.push(
@@ -176,10 +279,19 @@ export function generateIntelligenceResult({
   }
 
   return {
+    scoringVersion:
+    SCORING_VERSION,
+    
     scores,
+
     evidence,
+
+    explanations,
+
     opportunities,
+
     economics,
+
     warnings,
   };
 }

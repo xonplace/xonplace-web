@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 360" role="img" aria-label="XONPLACE AI Automation as a Service">
+
+<g transform="translate(36 28) scale(.59)">
+<polygon points="70,65 175,65 256,174 337,65 442,65 326,215 442,447 337,447 256,290 175,447 70,447 186,290" fill="#1565F5"/>
+<polygon points="337,65 442,65 326,215 442,447 337,447 256,290 256,174" fill="#07172A"/>
+<polygon points="186,290 256,174 326,215 256,290" fill="#3B82F6" opacity=".55"/>
+</g>
+<text x="375" y="180" fill="#07172A" font-family="Arial,Helvetica,sans-serif" font-size="112" font-weight="700" letter-spacing="15">XONPLACE</text>
+<text x="382" y="245" fill="#64748B" font-family="Arial,Helvetica,sans-serif" font-size="31" font-weight="500" letter-spacing="12">AI AUTOMATION AS A SERVICE</text>
+</svg>

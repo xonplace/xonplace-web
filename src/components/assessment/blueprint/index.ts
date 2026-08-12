@@ -14,3 +14,4 @@ export * from "./automation-portfolio";
 export * from "./ai-workforce";
 export * from "./roadmap-section";
 export * from "./next-steps-section";
+export * from "./score-explainability-section";

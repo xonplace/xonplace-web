@@ -1,6 +1,8 @@
 "use client";
 
-import { Download } from "lucide-react";
+import {
+  Download,
+} from "lucide-react";
 
 import {
   AIWorkforce,
@@ -15,67 +17,125 @@ import {
   ProcessAnalysisSection,
   RoadmapSection,
   NextStepsSection,
+  ScoreExplainabilitySection,
   type BlueprintReportData,
 } from "@/components/assessment/blueprint";
-import { Button } from "@/components/ui/button";
+
+import {
+  Button,
+} from "@/components/ui/button";
 
 type BlueprintReportProps = {
-  data: BlueprintReportData;
+  data:
+    BlueprintReportData;
 };
 
-export function BlueprintReport({ data }: BlueprintReportProps) {
+export function BlueprintReport({
+  data,
+}: BlueprintReportProps) {
   return (
     <div className="mx-auto w-full max-w-7xl">
       <div className="mb-6 flex justify-end print:hidden">
         <Button
           type="button"
-          onClick={() => window.print()}
+          onClick={() =>
+            window.print()
+          }
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Download className="size-4" />
+
           Guardar como PDF
         </Button>
       </div>
 
       <article className="overflow-hidden rounded-2xl border bg-white shadow-sm print:rounded-none print:border-0 print:shadow-none">
-        <ExecutiveCover data={data} />
+        <ExecutiveCover
+          data={data}
+        />
 
         <div className="space-y-14 p-8 sm:p-12">
-          <ExecutiveDashboard data={data} />
+          <ExecutiveDashboard
+            data={data}
+          />
 
-          <ProcessAnalysisSection data={data} />
+          <ProcessAnalysisSection
+            data={data}
+          />
 
-          <ExecutiveSummary data={data} />
+          <ExecutiveSummary
+            data={data}
+          />
 
-          <MaturityRadarSection data={data} />
+          {/*
+           * NUEVO:
+           *
+           * Explicamos primero los cuatro
+           * indicadores principales y luego
+           * mostramos el mapa de madurez.
+           */}
+          <ScoreExplainabilitySection
+            data={data}
+          />
 
-          <FindingsSection data={data} />
+          <MaturityRadarSection
+            data={data}
+          />
 
-          <BusinessImpactSection data={data} />
+          <FindingsSection
+            data={data}
+          />
 
-          <OpportunityMatrix data={data} />
+          <BusinessImpactSection
+            data={data}
+          />
 
-          <AutomationPortfolio data={data} />
+          <OpportunityMatrix
+            data={data}
+          />
 
-          <AIWorkforce data={data} />
+          <AutomationPortfolio
+            data={data}
+          />
 
-          <RoadmapSection data={data} />
+          <AIWorkforce
+            data={data}
+          />
 
-          <NextStepsSection data={data} />
+          <RoadmapSection
+            data={data}
+          />
+
+          <NextStepsSection
+            data={data}
+          />
 
           <footer className="border-t pt-8 text-center">
             <p className="font-semibold">
-              Este diagnóstico es una evaluación preliminar.
+              Este diagnóstico es una
+              evaluación preliminar.
             </p>
 
             <p className="mx-auto mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Las estimaciones deberán validarse mediante entrevistas,
-              observación de procesos, revisión de datos y análisis técnico.
+              Las estimaciones deberán
+              validarse mediante
+              entrevistas, observación
+              de procesos, revisión de
+              datos y análisis técnico.
             </p>
 
-            <p className="mt-4 text-xs text-muted-foreground">
-              Blueprint ID: {data.id}
-            </p>
+            <div className="mt-4 space-y-1 text-xs text-muted-foreground">
+              <p>
+                Blueprint ID: {data.id}
+              </p>
+
+              {data.scoringVersion && (
+                <p>
+                  XONPLACE Scoring Engine v
+                  {data.scoringVersion}
+                </p>
+              )}
+            </div>
           </footer>
         </div>
       </article>

@@ -1,4 +1,12 @@
-export type ScoreLevel = "Bajo" | "Medio" | "Alto" | "Muy alto";
+import type {
+  IntelligenceExplanations,
+} from "./explainability-engine";
+
+export type ScoreLevel =
+  | "Bajo"
+  | "Medio"
+  | "Alto"
+  | "Muy alto";
 
 export type IntelligenceScores = {
   readiness: number;
@@ -23,15 +31,21 @@ export type EvidenceType =
 
 export type AssessmentEvidence = {
   id: string;
+
   type: EvidenceType;
+
   title: string;
+
   description: string;
+
   strength: number;
+
   sourceQuestions: string[];
 };
 
 export type ProcessProfile = {
   name: string;
+
   description?: string;
 
   frequency:
@@ -130,13 +144,31 @@ export type EconomicProjection = {
 };
 
 export type IntelligenceResult = {
+  scoringVersion: string;
   scores: IntelligenceScores;
 
+  /*
+   * Evidencia utilizada por el diagnóstico.
+   */
   evidence: AssessmentEvidence[];
 
-  opportunities: AutomationOpportunity[];
+  /*
+   * Explicación determinística de los scores.
+   *
+   * Responde:
+   * - qué factores favorecen el resultado;
+   * - qué factores lo reducen;
+   * - qué evidencia falta;
+   * - cuánto cubre la evidencia disponible.
+   */
+  explanations:
+    IntelligenceExplanations;
 
-  economics: EconomicProjection;
+  opportunities:
+    AutomationOpportunity[];
+
+  economics:
+    EconomicProjection;
 
   warnings: string[];
 };

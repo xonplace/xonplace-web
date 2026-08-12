@@ -704,6 +704,9 @@ export function buildBlueprintV2({
     generatedAt:
       new Date().toISOString(),
 
+    scoringVersion:
+    intelligence.scoringVersion,  
+
     /*
      * Por compatibilidad con el Blueprint
      * existente mantenemos automationScore.
@@ -759,7 +762,10 @@ export function buildBlueprintV2({
      */
     maturityAnalysis:
       maturity,
-
+    
+    scoreExplanations:
+      intelligence.explanations,
+      
     processAnalysis: {
       name:
         process.name,

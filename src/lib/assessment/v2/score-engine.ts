@@ -395,12 +395,21 @@ function calculateOperationalCompleteness(
 function calculateReadiness(
   answers: AssessmentV2Answers,
 ): number {
+  const rulesKnown =
+    getString(
+      answers,
+      "rulesKnown",
+    );
+
+  const exceptionsLevel =
+    getString(
+      answers,
+      "exceptionsLevel",
+    );
+
   const rules =
     mapRules(
-      getString(
-        answers,
-        "rulesKnown",
-      ),
+      rulesKnown,
     );
 
   const integration =
@@ -415,10 +424,7 @@ function calculateReadiness(
 
   const exceptions =
     mapExceptions(
-      getString(
-        answers,
-        "exceptionsLevel",
-      ),
+      exceptionsLevel,
     );
 
   const rework =
@@ -442,14 +448,34 @@ function calculateReadiness(
       answers,
     );
 
+  const baseScore =
+    clamp(
+      rules * 0.25 +
+        integration * 0.25 +
+        information * 0.15 +
+        exceptions * 0.12 +
+        rework * 0.1 +
+        approvals * 0.05 +
+        completeness * 0.08,
+    );
+
+  let structuralPenalty = 0;
+
+  if (
+    rulesKnown === "none" &&
+    exceptionsLevel === "high"
+  ) {
+    structuralPenalty = 10;
+  } else if (
+    rulesKnown === "none" &&
+    exceptionsLevel === "medium"
+  ) {
+    structuralPenalty = 5;
+  }
+
   return clamp(
-    rules * 0.25 +
-      integration * 0.25 +
-      information * 0.15 +
-      exceptions * 0.12 +
-      rework * 0.1 +
-      approvals * 0.05 +
-      completeness * 0.08,
+    baseScore -
+      structuralPenalty,
   );
 }
 
@@ -738,7 +764,7 @@ function calculateConfidence(
   answers: AssessmentV2Answers,
 ): number {
   /*
-   * Confidence ahora representa
+   * Confidence representa
    * CALIDAD / COMPLETITUD de la información,
    * no severidad de los problemas.
    */
@@ -866,11 +892,22 @@ function calculateConfidence(
       answers,
     );
 
-  return clamp(
-    requiredScore * 0.5 +
-      operationalScore * 0.25 +
-      integrationScore * 0.15 +
-      descriptionScore * 0.1,
+  /*
+   * Confidence nunca alcanza 100
+   * automáticamente.
+   *
+   * Un Assessment completo sigue siendo
+   * información declarada que deberá ser
+   * validada durante Discovery.
+   */
+  return Math.min(
+    95,
+    clamp(
+      requiredScore * 0.5 +
+        operationalScore * 0.25 +
+        integrationScore * 0.15 +
+        descriptionScore * 0.1,
+    ),
   );
 }
 

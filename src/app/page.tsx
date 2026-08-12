@@ -46,13 +46,11 @@ const steps = [
 
 function XonplaceMark() {
   return (
-    <div
-      aria-hidden="true"
-      className="relative h-9 w-9 shrink-0 rounded-xl bg-slate-950 shadow-lg shadow-blue-950/20"
-    >
-      <span className="absolute left-[9px] top-[7px] h-5 w-2 -rotate-45 rounded-sm bg-white" />
-      <span className="absolute right-[9px] top-[7px] h-5 w-2 rotate-45 rounded-sm bg-blue-600" />
-    </div>
+    <img
+      src="/brand/xonplace-symbol.svg"
+      alt="XONPLACE"
+      className="h-10 w-10 shrink-0"
+    />
   );
 }
 
@@ -60,19 +58,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <a href="#inicio" className="flex items-center gap-3">
-            <XonplaceMark />
-
-            <div>
-              <p className="text-lg font-bold tracking-[0.18em]">
-                XONPLACE
-              </p>
-
-              <p className="hidden text-[10px] tracking-[0.22em] text-slate-500 sm:block">
-                AI AUTOMATION AS A SERVICE
-              </p>
-            </div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-8">
+          <a href="#inicio" className="flex items-center">
+            <img
+              src="/brand/xonplace-logo.svg"
+              alt="XONPLACE — AI Automation as a Service"
+              className="h-20 w-auto"
+            />
           </a>
 
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
@@ -605,24 +597,17 @@ export default function Home() {
       {/* FOOTER */}
 
       <footer className="border-t border-slate-200 bg-slate-50">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <div className="flex items-center gap-3">
-            <XonplaceMark />
-
-            <div>
-              <p className="font-bold tracking-[0.18em]">
-                XONPLACE
-              </p>
-
-              <p className="text-sm text-slate-500">
-                AI Automation as a Service
-              </p>
-            </div>
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <div className="flex items-center">
+            <img
+              src="/brand/xonplace-logo.svg"
+              alt="XONPLACE — AI Automation as a Service"
+              className="h-12 w-auto"
+            />
           </div>
 
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} XONPLACE. Todos los
-            derechos reservados.
+            © {new Date().getFullYear()} XONPLACE. Todos los derechos reservados.
           </p>
         </div>
       </footer>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="XONPLACE symbol">
+<rect width="512" height="512" rx="92" fill="#07172A"/><polygon points="70,65 175,65 256,174 337,65 442,65 326,215 442,447 337,447 256,290 175,447 70,447 186,290" fill="#1565F5"/>
+<polygon points="337,65 442,65 326,215 442,447 337,447 256,290 256,174" fill="#DCE7F7"/>
+<polygon points="186,290 256,174 326,215 256,290" fill="#3B82F6" opacity=".55"/>
+</svg>
