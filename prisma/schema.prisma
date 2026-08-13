@@ -87,3 +87,51 @@ model Blueprint {
   @@index([scoringVersion])
   @@index([createdAt])
 }
+
+model PreAssessment {
+  id String @id @default(cuid())
+
+  /**
+   * No guardamos el token real.
+   * El navegador recibe el token,
+   * pero PostgreSQL almacena únicamente
+   * su hash SHA-256.
+   */
+  tokenHash String @unique
+
+  /**
+   * Datos comerciales.
+   * Todavía pueden estar incompletos
+   * cuando se genera el Pre-Assessment.
+   */
+  email       String?
+  contactName String?
+  companyName String?
+
+  /**
+   * Respuestas que pudieron inferirse
+   * o confirmarse durante la conversación.
+   * Deben corresponder únicamente a campos
+   * válidos del Assessment V2.
+   */
+  context Json
+
+  /**
+   * Ciclo de vida esperado:
+   * PENDING
+   * OPENED
+   * CONSUMED
+   * EXPIRED
+   */
+  status String @default("PENDING")
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([createdAt])
+}

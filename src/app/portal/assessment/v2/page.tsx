@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -47,13 +48,48 @@ type PersistedAssessment = {
   blueprintId: string;
 };
 
+type PreAssessmentApiResponse =
+  | {
+      success: true;
+
+      preAssessment: {
+        id: string;
+
+        email?: string;
+
+        contactName?: string;
+
+        companyName?: string;
+
+        context:
+          AssessmentV2Answers;
+
+        status?: string;
+
+        expiresAt:
+          string;
+      };
+    }
+  | {
+      success: false;
+
+      error:
+        string;
+    };
+
 export default function AssessmentV2Page() {
-  const [result, setResult] =
+  const [
+    result,
+    setResult,
+  ] =
     useState<ReturnType<
       typeof generateIntelligenceResult
     > | null>(null);
 
-  const [answers, setAnswers] =
+  const [
+    answers,
+    setAnswers,
+  ] =
     useState<AssessmentV2Answers | null>(
       null,
     );
@@ -61,26 +97,157 @@ export default function AssessmentV2Page() {
   const [
     showBlueprint,
     setShowBlueprint,
-  ] = useState(false);
+  ] = useState(
+    false,
+  );
 
   const [
     isSaving,
     setIsSaving,
-  ] = useState(false);
+  ] = useState(
+    false,
+  );
 
   const [
     saveError,
     setSaveError,
-  ] = useState<string | null>(
-    null,
-  );
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const [
     persisted,
     setPersisted,
-  ] = useState<PersistedAssessment | null>(
-    null,
+  ] =
+    useState<PersistedAssessment | null>(
+      null,
+    );
+
+  /*
+   * ========================================================
+   * PRE-ASSESSMENT
+   * ========================================================
+   */
+
+  const [
+    initialAnswers,
+    setInitialAnswers,
+  ] =
+    useState<AssessmentV2Answers>(
+      {},
+    );
+
+  const [
+    isLoadingPreAssessment,
+    setIsLoadingPreAssessment,
+  ] = useState(
+    true,
   );
+
+  const [
+    preAssessmentError,
+    setPreAssessmentError,
+  ] =
+    useState<
+      string | null
+    >(null);
+
+  const [
+    preAssessmentLoaded,
+    setPreAssessmentLoaded,
+  ] = useState(
+    false,
+  );
+
+  useEffect(() => {
+    async function loadPreAssessment() {
+      try {
+        const params =
+          new URLSearchParams(
+            window.location.search,
+          );
+
+        const token =
+          params.get(
+            "token",
+          );
+
+        /*
+         * Assessment abierto de forma
+         * normal, sin venir del Advisor.
+         */
+        if (!token) {
+          setIsLoadingPreAssessment(
+            false,
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `/api/pre-assessments?token=${encodeURIComponent(
+              token,
+            )}`,
+            {
+              method:
+                "GET",
+
+              cache:
+                "no-store",
+            },
+          );
+
+        const data =
+          (await response.json()) as
+            PreAssessmentApiResponse;
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          throw new Error(
+            data.success
+              ? "No fue posible recuperar el PreAssessment."
+              : data.error,
+          );
+        }
+
+        setInitialAnswers(
+          data.preAssessment
+            .context,
+        );
+
+        setPreAssessmentLoaded(
+          true,
+        );
+      } catch (error) {
+        console.error(
+          "Error cargando PreAssessment:",
+          error,
+        );
+
+        setPreAssessmentError(
+          error instanceof Error
+            ? error.message
+            : "No fue posible cargar el Assessment preparado.",
+        );
+      } finally {
+        setIsLoadingPreAssessment(
+          false,
+        );
+      }
+    }
+
+    void loadPreAssessment();
+  }, []);
+
+  /*
+   * ========================================================
+   * GENERACIÓN DEL DIAGNÓSTICO
+   * ========================================================
+   */
 
   const handleComplete = (
     completedAnswers:
@@ -145,6 +312,12 @@ export default function AssessmentV2Page() {
     });
   };
 
+  /*
+   * ========================================================
+   * PERSISTENCIA BLUEPRINT
+   * ========================================================
+   */
+
   const handleGenerateBlueprint =
     async () => {
       if (
@@ -160,9 +333,9 @@ export default function AssessmentV2Page() {
       );
 
       /*
-       * Si ya fue persistido durante
-       * esta sesión no volvemos a crear
-       * otro Assessment.
+       * Si ya se guardó durante
+       * esta sesión no creamos
+       * registros duplicados.
        */
       if (persisted) {
         setShowBlueprint(
@@ -204,14 +377,6 @@ export default function AssessmentV2Page() {
               result,
           });
 
-        /*
-         * Nombre del cliente.
-         *
-         * AssessmentV2Answers es un
-         * diccionario flexible, por lo
-         * que validamos el tipo antes
-         * de utilizar el valor.
-         */
         const rawCompany =
           answers.company;
 
@@ -241,12 +406,8 @@ export default function AssessmentV2Page() {
             : undefined;
 
         /*
-         * Persistimos un snapshot
-         * completo del diagnóstico.
-         *
-         * Nunca dependeremos de
-         * recalcular un Assessment
-         * histórico para visualizarlo.
+         * Snapshot completo del
+         * Assessment V2.
          */
         const payload = {
           client: {
@@ -263,12 +424,11 @@ export default function AssessmentV2Page() {
 
           assessment: {
             /*
-             * Se conserva este campo
-             * por compatibilidad con
-             * Assessment V1.
+             * Campo legado.
              *
-             * En V2 usamos Opportunity
-             * como Automation Score.
+             * En V2 utilizamos
+             * Opportunity como
+             * Automation Score.
              */
             automationScore:
               result.scores
@@ -304,27 +464,14 @@ export default function AssessmentV2Page() {
 
             answers,
 
-            /*
-             * Guardamos las dimensiones
-             * visibles del Blueprint
-             * como snapshot separado.
-             */
             dimensions:
-            blueprintData
-              .dimensions,
+              blueprintData
+                .dimensions,
 
-            /*
-             * Insights completos que
-             * alimentan el Blueprint.
-             */
             insights:
               blueprintData
                 .insights,
 
-            /*
-             * Snapshot completo del
-             * Intelligence Engine.
-             */
             intelligence:
               result,
           },
@@ -362,15 +509,20 @@ export default function AssessmentV2Page() {
 
         const responseData =
           (await response.json()) as {
-            success: boolean;
+            success:
+              boolean;
 
-            clientId?: string;
+            clientId?:
+              string;
 
-            assessmentId?: string;
+            assessmentId?:
+              string;
 
-            blueprintId?: string;
+            blueprintId?:
+              string;
 
-            error?: string;
+            error?:
+              string;
           };
 
         if (
@@ -975,6 +1127,30 @@ export default function AssessmentV2Page() {
                 setSaveError(
                   null,
                 );
+
+                /*
+                 * Si el usuario quiere
+                 * empezar realmente de cero,
+                 * eliminamos también los
+                 * datos precargados.
+                 */
+                setInitialAnswers(
+                  {},
+                );
+
+                setPreAssessmentLoaded(
+                  false,
+                );
+
+                /*
+                 * Limpiamos token de la URL
+                 * sin recargar la página.
+                 */
+                window.history.replaceState(
+                  {},
+                  "",
+                  "/portal/assessment/v2",
+                );
               }}
               className="rounded-lg border bg-white px-4 py-2 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -1005,6 +1181,36 @@ export default function AssessmentV2Page() {
 
   /*
    * ========================================================
+   * CARGA PRE-ASSESSMENT
+   * ========================================================
+   */
+
+  if (
+    isLoadingPreAssessment
+  ) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+            XONPLACE
+          </p>
+
+          <h1 className="mt-3 text-2xl font-bold">
+            Preparando tu Assessment...
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Estamos recuperando la
+            información recopilada por
+            XONPLACE Advisor.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+   * ========================================================
    * FORMULARIO
    * ========================================================
    */
@@ -1012,7 +1218,47 @@ export default function AssessmentV2Page() {
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="px-6 py-10">
+        {preAssessmentLoaded && (
+          <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
+            <p className="font-semibold text-blue-900">
+              Assessment preparado por
+              XONPLACE Advisor
+            </p>
+
+            <p className="mt-1 text-sm leading-6 text-blue-800">
+              Precargamos únicamente la
+              información que pudimos
+              identificar durante la
+              conversación. Revísala y
+              completa los datos restantes.
+            </p>
+          </div>
+        )}
+
+        {preAssessmentError && (
+          <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+            <p className="font-semibold text-amber-900">
+              No fue posible recuperar
+              la información previa
+            </p>
+
+            <p className="mt-1 text-sm text-amber-800">
+              {
+                preAssessmentError
+              }
+            </p>
+
+            <p className="mt-2 text-xs leading-5 text-amber-700">
+              Puedes continuar realizando
+              el Assessment manualmente.
+            </p>
+          </div>
+        )}
+
         <AssessmentV2Form
+          initialAnswers={
+            initialAnswers
+          }
           onComplete={
             handleComplete
           }

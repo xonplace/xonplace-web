@@ -1,143 +1,296 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import {
   assessmentV2Questions,
   type AssessmentV2Answers,
 } from "@/lib/assessment/v2";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+
+import {
+  Input,
+} from "@/components/ui/input";
 
 type AssessmentV2FormProps = {
-  onComplete?: (answers: AssessmentV2Answers) => void;
+  onComplete?: (
+    answers:
+      AssessmentV2Answers,
+  ) => void;
+
+  initialAnswers?:
+    AssessmentV2Answers;
 };
 
 function isVisible(
-  question: (typeof assessmentV2Questions)[number],
-  answers: AssessmentV2Answers,
+  question:
+    (typeof assessmentV2Questions)[number],
+
+  answers:
+    AssessmentV2Answers,
 ): boolean {
-  if (!question.showWhen) {
+  if (
+    !question.showWhen
+  ) {
     return true;
   }
 
-  const current = answers[question.showWhen.questionId];
+  const current =
+    answers[
+      question.showWhen
+        .questionId
+    ];
 
-  if (Array.isArray(current)) {
-    return current.some((value) =>
-      question.showWhen?.values.includes(value),
+  if (
+    Array.isArray(
+      current,
+    )
+  ) {
+    return current.some(
+      (value) =>
+        question.showWhen?.values.includes(
+          value,
+        ),
     );
   }
 
   return (
-    typeof current === "string" &&
-    question.showWhen.values.includes(current)
+    typeof current ===
+      "string" &&
+    question.showWhen.values.includes(
+      current,
+    )
   );
 }
 
 export function AssessmentV2Form({
   onComplete,
+  initialAnswers = {},
 }: AssessmentV2FormProps) {
-  const [answers, setAnswers] = useState<AssessmentV2Answers>({});
-  const [sectionIndex, setSectionIndex] = useState(0);
+  /*
+   * initialAnswers se utiliza
+   * únicamente al montar el formulario.
+   *
+   * Después el usuario es dueño de las
+   * respuestas y puede cambiarlas.
+   */
+  const [
+    answers,
+    setAnswers,
+  ] =
+    useState<AssessmentV2Answers>(
+      () => ({
+        ...initialAnswers,
+      }),
+    );
 
-  const sections = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          assessmentV2Questions.map(
-            (question) => question.section,
+  const [
+    sectionIndex,
+    setSectionIndex,
+  ] = useState(
+    0,
+  );
+
+  const sections =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            assessmentV2Questions.map(
+              (
+                question,
+              ) =>
+                question.section,
+            ),
           ),
         ),
-      ),
-    [],
-  );
 
-  const currentSection = sections[sectionIndex];
+      [],
+    );
 
-  const questions = assessmentV2Questions.filter(
-    (question) =>
-      question.section === currentSection &&
-      isVisible(question, answers),
-  );
+  const currentSection =
+    sections[
+      sectionIndex
+    ];
+
+  const questions =
+    assessmentV2Questions.filter(
+      (
+        question,
+      ) =>
+        question.section ===
+          currentSection &&
+        isVisible(
+          question,
+          answers,
+        ),
+    );
 
   const progress =
-    ((sectionIndex + 1) / sections.length) * 100;
+    (
+      (sectionIndex + 1) /
+      sections.length
+    ) * 100;
 
   const updateAnswer = (
     id: string,
-    value: string | string[],
+
+    value:
+      | string
+      | string[],
   ) => {
-    setAnswers((current) => ({
-      ...current,
-      [id]: value,
-    }));
+    setAnswers(
+      (
+        current,
+      ) => ({
+        ...current,
+
+        [id]:
+          value,
+      }),
+    );
   };
 
   const toggleMultiple = (
-    id: string,
-    value: string,
+    id:
+      string,
+
+    value:
+      string,
   ) => {
-    const current = answers[id];
+    const current =
+      answers[id];
 
-    const selected = Array.isArray(current)
-      ? current
-      : [];
+    const selected =
+      Array.isArray(
+        current,
+      )
+        ? current
+        : [];
 
-    const next = selected.includes(value)
-      ? selected.filter((item) => item !== value)
-      : [...selected, value];
+    const next =
+      selected.includes(
+        value,
+      )
+        ? selected.filter(
+            (
+              item,
+            ) =>
+              item !==
+              value,
+          )
+        : [
+            ...selected,
+            value,
+          ];
 
-    updateAnswer(id, next);
+    updateAnswer(
+      id,
+      next,
+    );
   };
 
-  const sectionIsValid = questions.every((question) => {
-    if (!question.required) {
-      return true;
-    }
+  const sectionIsValid =
+    questions.every(
+      (
+        question,
+      ) => {
+        if (
+          !question.required
+        ) {
+          return true;
+        }
 
-    const answer = answers[question.id];
+        const answer =
+          answers[
+            question.id
+          ];
 
-    if (Array.isArray(answer)) {
-      return answer.length > 0;
-    }
+        if (
+          Array.isArray(
+            answer,
+          )
+        ) {
+          return (
+            answer.length >
+            0
+          );
+        }
 
-    return Boolean(answer?.trim());
-  });
+        return Boolean(
+          answer?.trim(),
+        );
+      },
+    );
 
   const next = () => {
-    if (!sectionIsValid) {
+    if (
+      !sectionIsValid
+    ) {
       return;
     }
 
-    if (sectionIndex < sections.length - 1) {
-      setSectionIndex((current) => current + 1);
+    if (
+      sectionIndex <
+      sections.length -
+        1
+    ) {
+      setSectionIndex(
+        (
+          current,
+        ) =>
+          current + 1,
+      );
 
       window.scrollTo({
         top: 0,
-        behavior: "smooth",
+
+        behavior:
+          "smooth",
       });
 
       return;
     }
 
-    onComplete?.(answers);
+    onComplete?.(
+      answers,
+    );
   };
 
-  const previous = () => {
-    if (sectionIndex === 0) {
-      return;
-    }
+  const previous =
+    () => {
+      if (
+        sectionIndex ===
+        0
+      ) {
+        return;
+      }
 
-    setSectionIndex((current) => current - 1);
+      setSectionIndex(
+        (
+          current,
+        ) =>
+          current - 1,
+      );
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
+      window.scrollTo({
+        top: 0,
+
+        behavior:
+          "smooth",
+      });
+    };
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -148,7 +301,12 @@ export function AssessmentV2Form({
           </span>
 
           <span className="text-muted-foreground">
-            {sectionIndex + 1} de {sections.length}
+            {sectionIndex +
+              1}{" "}
+            de{" "}
+            {
+              sections.length
+            }
           </span>
         </div>
 
@@ -156,7 +314,8 @@ export function AssessmentV2Form({
           <div
             className="h-full bg-blue-600 transition-all duration-300"
             style={{
-              width: `${progress}%`,
+              width:
+                `${progress}%`,
             }}
           />
         </div>
@@ -164,155 +323,264 @@ export function AssessmentV2Form({
 
       <div>
         <p className="text-sm font-medium text-blue-600">
-          Etapa {sectionIndex + 1}
+          Etapa{" "}
+          {sectionIndex +
+            1}
         </p>
 
         <h1 className="mt-1 text-3xl font-bold tracking-tight">
-          {currentSection}
+          {
+            currentSection
+          }
         </h1>
+
+        {Object.keys(
+          initialAnswers,
+        ).length >
+          0 && (
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Algunas respuestas
+            fueron preparadas a
+            partir de tu
+            conversación con
+            XONPLACE Advisor.
+            Revísalas y corrige
+            cualquier información
+            que no corresponda.
+          </p>
+        )}
       </div>
 
       <div className="space-y-6">
-        {questions.map((question) => {
-          const answer = answers[question.id];
+        {questions.map(
+          (
+            question,
+          ) => {
+            const answer =
+              answers[
+                question.id
+              ];
 
-          return (
-            <Card key={question.id}>
-              <CardContent className="space-y-4 p-6">
-                <div>
-                  <h2 className="font-semibold">
-                    {question.title}
-                    {question.required && (
-                      <span className="ml-1 text-red-500">
-                        *
-                      </span>
+            const wasPrefilled =
+              Object.prototype.hasOwnProperty.call(
+                initialAnswers,
+                question.id,
+              );
+
+            return (
+              <Card
+                key={
+                  question.id
+                }
+                className={
+                  wasPrefilled
+                    ? "border-blue-200"
+                    : undefined
+                }
+              >
+                <CardContent className="space-y-4 p-6">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-semibold">
+                        {
+                          question.title
+                        }
+
+                        {question.required && (
+                          <span className="ml-1 text-red-500">
+                            *
+                          </span>
+                        )}
+                      </h2>
+
+                      {wasPrefilled && (
+                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                          Precargado
+                        </span>
+                      )}
+                    </div>
+
+                    {question.description && (
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        {
+                          question.description
+                        }
+                      </p>
                     )}
-                  </h2>
+                  </div>
 
-                  {question.description && (
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      {question.description}
-                    </p>
+                  {question.type ===
+                    "text" && (
+                    <Input
+                      value={
+                        typeof answer ===
+                        "string"
+                          ? answer
+                          : ""
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        updateAnswer(
+                          question.id,
+
+                          event.target
+                            .value,
+                        )
+                      }
+                    />
                   )}
-                </div>
 
-                {question.type === "text" && (
-                  <Input
-                    value={
-                      typeof answer === "string"
-                        ? answer
-                        : ""
-                    }
-                    onChange={(event) =>
-                      updateAnswer(
-                        question.id,
-                        event.target.value,
-                      )
-                    }
-                  />
-                )}
+                  {question.type ===
+                    "number" && (
+                    <Input
+                      type="number"
+                      min="0"
+                      value={
+                        typeof answer ===
+                        "string"
+                          ? answer
+                          : ""
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        updateAnswer(
+                          question.id,
 
-                {question.type === "number" && (
-                  <Input
-                    type="number"
-                    min="0"
-                    value={
-                      typeof answer === "string"
-                        ? answer
-                        : ""
-                    }
-                    onChange={(event) =>
-                      updateAnswer(
-                        question.id,
-                        event.target.value,
-                      )
-                    }
-                  />
-                )}
+                          event.target
+                            .value,
+                        )
+                      }
+                    />
+                  )}
 
-                {question.type === "single" && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {question.options?.map((option) => {
-                      const selected =
-                        answer === option.value;
+                  {question.type ===
+                    "single" && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {question.options?.map(
+                        (
+                          option,
+                        ) => {
+                          const selected =
+                            answer ===
+                            option.value;
 
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() =>
-                            updateAnswer(
-                              question.id,
+                          return (
+                            <button
+                              key={
+                                option.value
+                              }
+                              type="button"
+                              onClick={() =>
+                                updateAnswer(
+                                  question.id,
+
+                                  option.value,
+                                )
+                              }
+                              className={[
+                                "rounded-xl border p-4 text-left text-sm transition",
+
+                                selected
+                                  ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                                  : "hover:border-blue-300 hover:bg-muted/40",
+                              ].join(
+                                " ",
+                              )}
+                            >
+                              {
+                                option.label
+                              }
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+
+                  {question.type ===
+                    "multiple" && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {question.options?.map(
+                        (
+                          option,
+                        ) => {
+                          const selected =
+                            Array.isArray(
+                              answer,
+                            ) &&
+                            answer.includes(
                               option.value,
-                            )
-                          }
-                          className={[
-                            "rounded-xl border p-4 text-left text-sm transition",
-                            selected
-                              ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
-                              : "hover:border-blue-300 hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                            );
 
-                {question.type === "multiple" && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {question.options?.map((option) => {
-                      const selected =
-                        Array.isArray(answer) &&
-                        answer.includes(option.value);
+                          return (
+                            <button
+                              key={
+                                option.value
+                              }
+                              type="button"
+                              onClick={() =>
+                                toggleMultiple(
+                                  question.id,
 
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() =>
-                            toggleMultiple(
-                              question.id,
-                              option.value,
-                            )
-                          }
-                          className={[
-                            "rounded-xl border p-4 text-left text-sm transition",
-                            selected
-                              ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
-                              : "hover:border-blue-300 hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                                  option.value,
+                                )
+                              }
+                              className={[
+                                "rounded-xl border p-4 text-left text-sm transition",
+
+                                selected
+                                  ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                                  : "hover:border-blue-300 hover:bg-muted/40",
+                              ].join(
+                                " ",
+                              )}
+                            >
+                              {
+                                option.label
+                              }
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          },
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t pt-6">
         <Button
           type="button"
           variant="outline"
-          onClick={previous}
-          disabled={sectionIndex === 0}
+          onClick={
+            previous
+          }
+          disabled={
+            sectionIndex ===
+            0
+          }
         >
           Anterior
         </Button>
 
         <Button
           type="button"
-          onClick={next}
-          disabled={!sectionIsValid}
+          onClick={
+            next
+          }
+          disabled={
+            !sectionIsValid
+          }
           className="bg-blue-600 hover:bg-blue-700"
         >
-          {sectionIndex === sections.length - 1
+          {sectionIndex ===
+          sections.length -
+            1
             ? "Generar diagnóstico"
             : "Continuar"}
         </Button>

@@ -1,3 +1,8 @@
+
+import {
+  XonplaceAdvisor,
+} from "@/components/chat/xonplace-advisor";
+
 const capabilities = [
   {
     title: "Automation Assessment",
@@ -611,6 +616,8 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+    <XonplaceAdvisor />  
     </main>
   );
 }
