@@ -363,3 +363,128 @@ export async function sendAssessmentAccessEmail(
     text,
   });
 }
+
+export type SendInternalAssessmentRequestEmailInput = {
+  name: string;
+  company: string;
+  email: string;
+  employees: string;
+  processName?: string;
+  assessmentUrl: string;
+};
+
+export async function sendInternalAssessmentRequestEmail(
+  input:
+    SendInternalAssessmentRequestEmailInput,
+) {
+  const provider =
+    getEmailProvider();
+
+  const safeName =
+    escapeHtml(
+      input.name,
+    );
+
+  const safeCompany =
+    escapeHtml(
+      input.company,
+    );
+
+  const safeEmail =
+    escapeHtml(
+      input.email,
+    );
+
+  const safeEmployees =
+    escapeHtml(
+      input.employees,
+    );
+
+  const safeProcess =
+    input.processName
+      ? escapeHtml(
+          input.processName,
+        )
+      : "No informado";
+
+  const safeAssessmentUrl =
+    escapeHtml(
+      input.assessmentUrl,
+    );
+
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:640px;margin:auto;">
+      <div style="background:#020617;color:#fff;padding:24px;border-radius:16px 16px 0 0;">
+        <div style="font-size:20px;font-weight:700;">XONPLACE</div>
+        <div style="margin-top:4px;color:#94a3b8;font-size:12px;">
+          Nuevo Automation Assessment
+        </div>
+      </div>
+
+      <div style="border:1px solid #e2e8f0;border-top:0;padding:28px;border-radius:0 0 16px 16px;">
+        <h2 style="margin-top:0;">Nueva solicitud desde xonplace.com</h2>
+
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;font-weight:700;">Nombre</td>
+            <td>${safeName}</td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px 0;font-weight:700;">Empresa</td>
+            <td>${safeCompany}</td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px 0;font-weight:700;">Correo</td>
+            <td>${safeEmail}</td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px 0;font-weight:700;">Tamaño</td>
+            <td>${safeEmployees}</td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px 0;font-weight:700;">Proceso</td>
+            <td>${safeProcess}</td>
+          </tr>
+        </table>
+
+        <div style="margin-top:24px;">
+          <a
+            href="${safeAssessmentUrl}"
+            style="display:inline-block;background:#2563eb;color:white;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px;"
+          >
+            Abrir Assessment
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const text = `
+Nuevo Automation Assessment XONPLACE
+
+Nombre: ${input.name}
+Empresa: ${input.company}
+Correo: ${input.email}
+Tamaño: ${input.employees}
+Proceso: ${input.processName ?? "No informado"}
+
+Assessment:
+${input.assessmentUrl}
+  `.trim();
+
+  return provider.send({
+    to:
+      "xonplace@gmail.com",
+
+    subject:
+      `Nuevo Assessment · ${input.company}`,
+
+    html,
+
+    text,
+  });
+}

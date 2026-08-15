@@ -1,3 +1,6 @@
+import {
+  AssessmentRequestForm,
+} from "@/components/landing/assessment-request-form";
 
 import {
   XonplaceAdvisor,
@@ -301,54 +304,126 @@ export default function Home() {
 
       {/* METODOLOGÍA */}
 
-      <section
-        id="metodologia"
-        className="py-24"
-      >
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
-                Nuestro enfoque
-              </p>
+<section
+  id="metodologia"
+  className="py-24"
+>
+  <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <div className="max-w-3xl">
+      <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
+        Nuestro enfoque
+      </p>
 
-              <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
-                Primero entendemos. Después automatizamos.
-              </h2>
+      <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+        Primero entendemos. Después automatizamos.
+      </h2>
 
-              <p className="mt-6 text-lg leading-8 text-slate-600">
-                La IA no transforma una organización por sí sola.
-                El cambio comienza por comprender sus procesos,
-                información, reglas, decisiones y sistemas antes
-                de decidir qué automatizar.
+      <p className="mt-6 text-lg leading-8 text-slate-600">
+        La IA no transforma una organización por sí sola. El cambio
+        comienza por comprender sus procesos, información, reglas,
+        decisiones y sistemas antes de decidir qué automatizar.
+      </p>
+    </div>
+
+    {/* Desktop timeline */}
+
+    <div className="relative mt-16 hidden lg:block">
+      <div className="absolute left-4 right-4 top-5 h-px bg-slate-200" />
+
+      <div className="relative grid grid-cols-4 gap-8">
+        {steps.map(
+          (
+            [
+              number,
+              title,
+              description,
+            ],
+            index,
+          ) => (
+            <div
+              key={
+                number
+              }
+              className="relative"
+            >
+              <div
+                className={`relative z-10 flex size-10 items-center justify-center rounded-full text-xs font-bold text-white ${
+                  index ===
+                  steps.length -
+                    1
+                    ? "bg-blue-600 shadow-lg shadow-blue-600/20"
+                    : "bg-slate-950"
+                }`}
+              >
+                {number}
+              </div>
+
+              <h3 className="mt-8 text-xl font-bold tracking-tight">
+                {title}
+              </h3>
+
+              <p className="mt-3 max-w-xs leading-7 text-slate-600">
+                {
+                  description
+                }
               </p>
             </div>
+          ),
+        )}
+      </div>
+    </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {steps.map(
-                ([number, title, description]) => (
-                  <div
-                    key={number}
-                    className="rounded-2xl border border-slate-200 p-6"
-                  >
-                    <p className="text-sm font-bold text-blue-600">
-                      {number}
-                    </p>
+    {/* Mobile / tablet timeline */}
 
-                    <h3 className="mt-4 text-xl font-bold">
-                      {title}
-                    </h3>
+    <div className="relative mt-12 space-y-10 lg:hidden">
+      <div className="absolute bottom-4 left-5 top-4 w-px bg-slate-200" />
 
-                    <p className="mt-3 leading-7 text-slate-600">
-                      {description}
-                    </p>
-                  </div>
-                ),
-              )}
+      {steps.map(
+        (
+          [
+            number,
+            title,
+            description,
+          ],
+          index,
+        ) => (
+          <div
+            key={
+              number
+            }
+            className="relative flex gap-6"
+          >
+            <div
+              className={`relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                index ===
+                steps.length -
+                  1
+                  ? "bg-blue-600 shadow-lg shadow-blue-600/20"
+                  : "bg-slate-950"
+              }`}
+            >
+              {number}
+            </div>
+
+            <div className="pb-2">
+              <h3 className="text-xl font-bold tracking-tight">
+                {title}
+              </h3>
+
+              <p className="mt-2 leading-7 text-slate-600">
+                {
+                  description
+                }
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+        ),
+      )}
+    </div>
+  </div>
+</section>
+
+      
 
       {/* ASSESSMENT */}
 
@@ -570,34 +645,45 @@ export default function Home() {
 
       {/* CONTACTO */}
 
-      <section
-        id="contacto"
-        className="py-24"
-      >
-        <div className="mx-auto max-w-5xl px-6 text-center lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
-            Comencemos
-          </p>
+      {/* CONTACTO */}
 
-          <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
-            ¿Cuánto tiempo pierde hoy su empresa en trabajo
-            repetitivo?
-          </h2>
+<section
+  id="contacto"
+  className="border-t border-slate-100 bg-slate-50/70 py-24"
+>
+  <div className="mx-auto grid max-w-7xl items-start gap-14 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+    <div className="lg:pt-8">
+      <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
+        Comencemos
+      </p>
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600">
-            El primer paso no es comprar una plataforma. Es
-            identificar dónde están las mejores oportunidades de
-            automatización.
-          </p>
+      <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+        ¿Cuánto tiempo pierde hoy su empresa en trabajo repetitivo?
+      </h2>
 
-          <a
-            href="mailto:contacto@xonplace.com"
-            className="mt-10 inline-flex rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white shadow-xl shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
-          >
-            Hablar con XONPLACE
-          </a>
-        </div>
-      </section>
+      <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+        El primer paso no es comprar una plataforma. Es identificar
+        dónde están las mejores oportunidades de automatización.
+      </p>
+
+      <div className="mt-8 space-y-3 text-sm text-slate-600">
+        <p>
+          ✓ Diagnóstico basado en información operacional.
+        </p>
+
+        <p>
+          ✓ Acceso inmediato al Automation Assessment.
+        </p>
+
+        <p>
+          ✓ Sin necesidad de compartir credenciales ni información sensible.
+        </p>
+      </div>
+    </div>
+
+    <AssessmentRequestForm />
+  </div>
+</section>
 
       {/* FOOTER */}
 

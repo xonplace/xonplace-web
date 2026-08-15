@@ -50,8 +50,7 @@ function validateMessages(
     ) => {
       if (
         !message ||
-        typeof message !==
-          "object"
+        typeof message !== "object"
       ) {
         throw new Error(
           `El mensaje ${index + 1} no es válido.`,
@@ -65,10 +64,8 @@ function validateMessages(
         };
 
       if (
-        candidate.role !==
-          "user" &&
-        candidate.role !==
-          "assistant"
+        candidate.role !== "user" &&
+        candidate.role !== "assistant"
       ) {
         throw new Error(
           `El rol del mensaje ${index + 1} no es válido.`,
@@ -76,8 +73,7 @@ function validateMessages(
       }
 
       if (
-        typeof candidate.content !==
-          "string" ||
+        typeof candidate.content !== "string" ||
         !candidate.content.trim()
       ) {
         throw new Error(
@@ -98,6 +94,79 @@ function validateMessages(
             ),
       };
     },
+  );
+}
+
+/*
+ * =========================================================
+ * URL PÚBLICA DE LA APLICACIÓN
+ * =========================================================
+ *
+ * Producción:
+ *   https://xonplace.com
+ *
+ * GitHub Codespaces:
+ *   https://xxxx-3000.app.github.dev
+ *
+ * Desarrollo local tradicional:
+ *   http://localhost:3000
+ */
+function getPublicBaseUrl(
+  request: Request,
+): string {
+  const configuredProductionUrl =
+    process.env
+      .NEXT_PUBLIC_APP_URL
+      ?.trim()
+      .replace(
+        /\/$/,
+        "",
+      );
+
+  /*
+   * En Vercel/producción utilizamos
+   * siempre la URL oficial configurada.
+   */
+  if (
+    process.env.NODE_ENV === "production" &&
+    configuredProductionUrl
+  ) {
+    return configuredProductionUrl;
+  }
+
+  /*
+   * GitHub Codespaces y otros proxies
+   * informan el dominio público mediante
+   * x-forwarded-host.
+   */
+  const forwardedHost =
+    request.headers.get(
+      "x-forwarded-host",
+    );
+
+  const forwardedProto =
+    request.headers.get(
+      "x-forwarded-proto",
+    ) ?? "https";
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`.replace(
+      /\/$/,
+      "",
+    );
+  }
+
+  /*
+   * Fallback para desarrollo local.
+   */
+  const requestUrl =
+    new URL(
+      request.url,
+    );
+
+  return requestUrl.origin.replace(
+    /\/$/,
+    "",
   );
 }
 
@@ -129,12 +198,6 @@ export async function POST(
      * =====================================================
      * 1. EXTRAER CONTEXTO
      * =====================================================
-     *
-     * Conversación libre
-     *        ↓
-     * Extractor IA
-     *        ↓
-     * AssessmentV2Answers
      */
 
     const context =
@@ -143,20 +206,14 @@ export async function POST(
       );
 
     const companyName =
-      typeof context.company ===
-      "string"
-        ? context.company
-            .trim()
+      typeof context.company === "string"
+        ? context.company.trim()
         : undefined;
 
     /*
      * =====================================================
      * 2. CREAR PRE-ASSESSMENT
      * =====================================================
-     *
-     * El service vuelve a validar
-     * y sanitizar el contexto antes
-     * de escribir en PostgreSQL.
      */
 
     const result =
@@ -175,7 +232,7 @@ export async function POST(
 
     /*
      * =====================================================
-     * 3. CONSTRUIR URL
+     * 3. GENERAR LINK PÚBLICO
      * =====================================================
      */
 
@@ -184,51 +241,35 @@ export async function POST(
         result.token,
       )}`;
 
-    const requestUrl =
-      new URL(
-        request.url,
-      );
-
-    const configuredBaseUrl =
-      process.env
-        .NEXT_PUBLIC_APP_URL
-        ?.trim()
-        .replace(
-          /\/$/,
-          "",
-        );
-
     const baseUrl =
-      configuredBaseUrl ||
-      requestUrl.origin;
+      getPublicBaseUrl(
+        request,
+      );
 
     const assessmentUrl =
       `${baseUrl}${relativeUrl}`;
 
     /*
+     * Muy útil mientras estamos
+     * validando Codespaces/Vercel.
+     *
+     * No contiene el hash almacenado
+     * en DB ni otra credencial.
+     */
+    console.log(
+      "[PreAssessment] URL:",
+      assessmentUrl,
+    );
+
+    /*
      * =====================================================
-     * 4. ENVIAR CORREO
+     * 4. ENVIAR EMAIL
      * =====================================================
-     *
-     * Importante:
-     *
-     * El PreAssessment ya existe.
-     *
-     * Si el proveedor de correo falla,
-     * NO eliminamos el Assessment ni
-     * devolvemos error al usuario.
-     *
-     * El botón del Advisor seguirá
-     * permitiendo continuar.
      */
 
     const processName =
-      typeof result.context
-        .processName ===
-      "string"
-        ? result.context
-            .processName
-            .trim()
+      typeof result.context.processName === "string"
+        ? result.context.processName.trim()
         : undefined;
 
     let emailSent =
@@ -269,7 +310,7 @@ export async function POST(
         emailResult.provider;
     } catch (emailError) {
       console.error(
-        "No fue posible enviar correo del PreAssessment:",
+        "[PreAssessment] No fue posible enviar el correo:",
         emailError,
       );
 
@@ -293,9 +334,8 @@ export async function POST(
         result.id,
 
       /*
-       * El frontend necesita el link
-       * para mostrar el botón
-       * "Continuar Assessment".
+       * El Advisor utiliza esta URL
+       * para el botón Continuar Assessment.
        */
       url:
         assessmentUrl,
@@ -303,8 +343,7 @@ export async function POST(
       relativeUrl,
 
       expiresAt:
-        result.expiresAt
-          .toISOString(),
+        result.expiresAt.toISOString(),
 
       context:
         result.context,
@@ -319,22 +358,13 @@ export async function POST(
         provider:
           emailProvider,
 
-        /*
-         * Esto nos ayuda durante
-         * desarrollo.
-         *
-         * Más adelante podemos
-         * eliminar este error de la
-         * respuesta pública y dejarlo
-         * solamente en logs.
-         */
         error:
           emailErrorMessage,
       },
     });
   } catch (error) {
     console.error(
-      "Error creando PreAssessment:",
+      "[PreAssessment] Error:",
       error,
     );
 
@@ -427,13 +457,12 @@ export async function GET(
           preAssessment.status,
 
         expiresAt:
-          preAssessment.expiresAt
-            .toISOString(),
+          preAssessment.expiresAt.toISOString(),
       },
     });
   } catch (error) {
     console.error(
-      "Error recuperando PreAssessment:",
+      "[PreAssessment] Error recuperando Assessment:",
       error,
     );
 
